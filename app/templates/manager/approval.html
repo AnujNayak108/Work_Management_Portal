@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Review — {{ employee.name }} — ATOMQUEST{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Review Goal Sheet</h1>
+  <p>{{ employee.name }} ({{ employee.employee_id }}) &middot; {{ sheet.cycle.name }}</p>
+</div>
+
+<div class="flex gap-1 mb-3 flex-center">
+  <span class="badge badge-{{ sheet.status }}">{{ sheet.status|upper }}</span>
+  {% if sheet.submitted_at %}
+  <span style="color:var(--text-muted);font-size:12px;">Submitted {{ sheet.submitted_at.strftime('%d %b %Y, %H:%M') }}</span>
+  {% endif %}
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="card-title">Goals ({{ sheet.goals|length }}) &middot; Weightage: {{ sheet.total_weightage }}%</h3>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Thrust Area</th><th>Title</th><th>Description</th><th>Unit</th><th>Target</th><th>Weight</th>
+        {% if sheet.status == 'submitted' %}<th></th>{% endif %}</tr>
+      </thead>
+      <tbody>
+        {% for goal in sheet.goals %}
+        <tr>
+          <td style="color:var(--text-faint);">{{ loop.index }}</td>
+          <td>{{ goal.thrust_area }}</td>
+          <td>
+            <span style="color:var(--text-primary);font-weight:500;">{{ goal.title }}</span>
+            {% if goal.is_shared %}<span class="badge badge-locked" style="font-size:9px;margin-left:4px;">SHARED</span>{% endif %}
+          </td>
+          <td style="max-width:180px;font-size:12px;color:var(--text-tertiary);">{{ goal.description or '—' }}</td>
+          <td>{{ goal.unit_type|replace('_',' ')|title }}</td>
+          <td>
+            <span class="inline-display" style="font-variant-numeric:tabular-nums;">{% if goal.unit_type == 'timeline' %}{{ goal.target_date }}{% elif goal.unit_type == 'zero_based' %}Zero{% else %}{{ goal.target_value }}{% endif %}</span>
+            {% if sheet.status == 'submitted' %}
+            <form method="POST" action="{{ url_for('manager.edit_goal', goal_id=goal.id) }}" class="inline-field hidden" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="number" name="target_value" value="{{ goal.target_value or '' }}" class="form-control" style="width:90px;display:inline;padding:4px 8px;font-size:12px;">
+              <button type="submit" class="btn btn-sm btn-primary" style="padding:4px 8px;">Save</button>
+            </form>
+            {% endif %}
+          </td>
+          <td><strong>{{ goal.weightage }}%</strong></td>
+          {% if sheet.status == 'submitted' %}
+          <td><button class="btn btn-sm btn-ghost inline-edit-btn">Edit</button></td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if sheet.status == 'submitted' %}
+<div class="card">
+  <div class="card-header"><h3 class="card-title">Decision</h3></div>
+  <div class="flex gap-1">
+    <form method="POST" action="{{ url_for('manager.approve', sheet_id=sheet.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-primary">Approve &amp; Lock</button>
+    </form>
+    <form method="POST" action="{{ url_for('manager.return_sheet', sheet_id=sheet.id) }}" style="flex:1;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="flex gap-1">
+        <input type="text" name="comment" class="form-control" placeholder="Reason for rework..." required style="flex:1;">
+        <button type="submit" class="btn btn-outline">Return for Rework</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}<script src="{{ url_for('static', filename='js/checkin.js') }}"></script>{% endblock %}

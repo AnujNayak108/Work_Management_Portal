@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Check-in — {{ employee.name }} — ATOMQUEST{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Quarterly Check-in</h1>
+  <p>{{ employee.name }} ({{ employee.employee_id }})</p>
+</div>
+
+{% if not sheet %}
+<div class="card empty-state">No goal sheet found for this employee.</div>
+{% else %}
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="card-title">Goals &amp; Progress</h3>
+    {% if current_quarter and current_quarter != 'goal_setting' %}<span class="badge badge-approved">{{ current_quarter }}</span>{% endif %}
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Goal</th><th>Target</th><th>Actual</th><th>Score</th><th>Status</th><th>Feedback</th></tr></thead>
+      <tbody>
+        {% for goal in sheet.goals %}
+        <tr>
+          <td><span style="color:var(--text-primary);font-weight:500;">{{ goal.title }}</span><br><span style="font-size:11px;color:var(--text-muted);">{{ goal.thrust_area }}</span></td>
+          <td style="font-variant-numeric:tabular-nums;">{% if goal.unit_type == 'timeline' %}{{ goal.target_date }}{% elif goal.unit_type == 'zero_based' %}Zero{% else %}{{ goal.target_value }}{% endif %}</td>
+          <td style="font-variant-numeric:tabular-nums;">
+            {% if quarter_scores %}{% for gs in quarter_scores.goals if gs.goal_id == goal.id %}{{ gs.actual_value if gs.actual_value is not none else '—' }}{% endfor %}{% else %}—{% endif %}
+          </td>
+          <td style="font-variant-numeric:tabular-nums;font-weight:600;">
+            {% if quarter_scores %}{% for gs in quarter_scores.goals if gs.goal_id == goal.id %}{{ gs.raw_score }}%{% endfor %}{% else %}—{% endif %}
+          </td>
+          <td><span class="badge badge-{{ goal.status }}">{{ goal.status|replace('_',' ')|title }}</span></td>
+          <td>
+            <form method="POST" action="{{ url_for('manager.add_comment', goal_id=goal.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="quarter" value="{{ current_quarter or 'Q1' }}">
+              <div class="flex gap-1">
+                <input type="text" name="comment" class="form-control" placeholder="Feedback..." style="min-width:120px;font-size:12px;padding:5px 8px;">
+                <select name="rating" class="form-control" style="width:80px;font-size:12px;padding:5px 8px;">
+                  <option value="">—</option>
+                  <option value="below">Below</option>
+                  <option value="meets">Meets</option>
+                  <option value="exceeds">Exceeds</option>
+                </select>
+                <button type="submit" class="btn btn-sm btn-outline">Add</button>
+              </div>
+            </form>
+          </td>
+        </tr>
+        {% for comment in goal.comments %}
+        <tr style="background:var(--bg-tertiary);">
+          <td colspan="6" style="padding-left:28px;font-size:12px;">
+            <span style="color:var(--text-secondary);font-weight:500;">{{ comment.author.name }}</span>
+            <span style="color:var(--text-faint);"> &middot; {{ comment.quarter }}</span>
+            {% if comment.rating %}<span class="badge badge-{{ 'approved' if comment.rating == 'exceeds' else ('submitted' if comment.rating == 'meets' else 'returned') }}" style="margin-left:4px;">{{ comment.rating|title }}</span>{% endif %}
+            <span style="color:var(--text-tertiary);margin-left:8px;">{{ comment.comment }}</span>
+            <span style="color:var(--text-faint);margin-left:8px;">{{ comment.created_at.strftime('%d %b') }}</span>
+          </td>
+        </tr>
+        {% endfor %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if quarter_scores %}
+<div class="card">
+  <div class="card-header"><h3 class="card-title">Quarter Summary</h3></div>
+  <div class="grid grid-3">
+    <div class="stat-card"><div class="stat-value">{{ quarter_scores.overall_score }}%</div><div class="stat-label">Overall Score</div></div>
+    <div class="stat-card"><div class="stat-value stat-emerald">{{ quarter_scores.goals|selectattr('status','equalto','completed')|list|length }}</div><div class="stat-label">Completed</div></div>
+    <div class="stat-card"><div class="stat-value stat-amber">{{ quarter_scores.goals|selectattr('status','equalto','on_track')|list|length }}</div><div class="stat-label">On Track</div></div>
+  </div>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

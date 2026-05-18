@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Shared Goals — ATOMQUEST{% endblock %}
+
+{% block content %}
+<div class="page-header"><h1>Shared Goals</h1><p>Push departmental KPIs to employees</p></div>
+
+<div class="card mb-3">
+  <div class="card-header"><h3 class="card-title">Create Shared Goal</h3></div>
+  <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Title</label><input type="text" name="title" class="form-control" required></div>
+      <div class="form-group"><label class="form-label">Thrust Area</label><input type="text" name="thrust_area" class="form-control" required></div>
+    </div>
+    <div class="form-group"><label class="form-label">Description</label><textarea name="description" class="form-control"></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Unit Type</label>
+        <select name="unit_type" class="form-control"><option value="numeric">Numeric</option><option value="percentage">Percentage</option><option value="timeline">Timeline</option><option value="zero_based">Zero-based</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Target Value</label><input type="number" name="target_value" class="form-control" step="any"></div>
+      <div class="form-group"><label class="form-label">Target Date</label><input type="date" name="target_date" class="form-control"></div>
+      <div class="form-group"><label class="form-label">Department</label>
+        <select name="department_id" class="form-control">{% for d in departments %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}</select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Assign to Employees</label>
+      <div style="max-height:140px;overflow-y:auto;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;">
+        {% for emp in employees %}
+        <label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;font-size:13px;color:var(--text-secondary);">
+          <input type="checkbox" name="employee_ids" value="{{ emp.id }}"> {{ emp.name }} <span style="color:var(--text-faint);font-size:11px;">({{ emp.department.name if emp.department else 'No dept' }})</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Create &amp; Push</button>
+  </form>
+</div>
+
+{% if shared_goals %}
+<div class="card">
+  <div class="card-header"><h3 class="card-title">Existing Shared Goals</h3></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Title</th><th>Thrust Area</th><th>Unit</th><th>Target</th><th>Department</th><th>Linked</th><th>Created</th></tr></thead>
+      <tbody>
+        {% for sg in shared_goals %}
+        <tr>
+          <td style="color:var(--text-primary);font-weight:500;">{{ sg.title }}</td>
+          <td>{{ sg.thrust_area }}</td>
+          <td>{{ sg.unit_type }}</td>
+          <td style="font-variant-numeric:tabular-nums;">{{ sg.target_value or sg.target_date or '—' }}</td>
+          <td>{{ sg.department.name }}</td>
+          <td style="font-variant-numeric:tabular-nums;">{{ sg.linked_goals|length }}</td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ sg.created_at.strftime('%d %b %Y') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

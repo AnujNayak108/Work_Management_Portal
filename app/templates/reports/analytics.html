@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Analytics — ATOMQUEST{% endblock %}
+
+{% block content %}
+<div class="page-header"><h1>Analytics</h1><p>{{ cycle.name if cycle else 'No active cycle' }}</p></div>
+
+<div class="grid grid-2 mb-3">
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">Quarter-on-Quarter Trends</h3></div>
+    <div class="chart-container"><canvas id="trends-chart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">Goal Distribution</h3></div>
+    <div class="chart-container"><canvas id="distribution-chart"></canvas></div>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">Completion Heatmap</h3></div>
+    <div id="heatmap-table" class="table-wrap"><p style="color:var(--text-muted);font-size:13px;">Loading...</p></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">Department Rates</h3></div>
+    <div class="chart-container"><canvas id="dept-chart"></canvas></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>{% endblock %}

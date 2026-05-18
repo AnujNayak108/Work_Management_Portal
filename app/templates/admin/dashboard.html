@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Admin — ATOMQUEST{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Admin Overview</h1>
+  <p>{{ cycle.name if cycle else 'No active cycle' }}</p>
+</div>
+
+<div class="grid grid-4 mb-3">
+  <div class="card stat-card">
+    <div class="stat-value">{{ stats.total_employees }}</div>
+    <div class="stat-label">Employees</div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-value stat-emerald">{{ stats.get('sheets_approved', 0) }}</div>
+    <div class="stat-label">Approved</div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-value stat-amber">{{ stats.get('sheets_submitted', 0) }}</div>
+    <div class="stat-label">Pending</div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-value stat-rose">{{ stats.get('pending_escalations', 0) }}</div>
+    <div class="stat-label">Escalations</div>
+  </div>
+</div>
+
+{% if cycle %}
+<div class="grid grid-2 mb-3">
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">Cycle Progress</h3></div>
+    {% set total = stats.get('sheets_total', 0) %}
+    {% set approved = stats.get('sheets_approved', 0) %}
+    {% set pct = (approved / total * 100)|int if total > 0 else 0 %}
+    <div style="font-size:28px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums;">{{ pct }}%</div>
+    <p style="color:var(--text-muted);font-size:12px;margin-top:2px;">{{ approved }} of {{ total }} sheets approved</p>
+    <div class="progress mt-2"><div class="progress-bar" style="width:{{ pct }}%"></div></div>
+    <div class="grid grid-2 mt-2" style="gap:4px;">
+      <div style="font-size:12px;color:var(--text-tertiary);">Draft: {{ stats.get('sheets_draft', 0) }}</div>
+      <div style="font-size:12px;color:var(--text-tertiary);">Returned: {{ stats.get('sheets_returned', 0) }}</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">Current Window</h3></div>
+    {% set window = cycle.current_window() %}
+    <div style="font-size:20px;font-weight:600;color:var(--text-primary);">{{ window|upper if window else 'CLOSED' }}</div>
+    <p style="color:var(--text-muted);font-size:12px;margin-top:4px;">
+      {% if window == 'goal_setting' %}Goal setting open: {{ cycle.goal_setting_start }} to {{ cycle.goal_setting_end }}
+      {% elif window %}Check-in window active
+      {% else %}No active window{% endif %}
+    </p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3 class="card-title">Locked Goal Sheets</h3></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Employee</th><th>Department</th><th>Goals</th><th>Approved By</th><th>Date</th><th></th></tr></thead>
+      <tbody>
+        {% set has_locked = namespace(found=false) %}
+        {% for dept in departments %}
+          {% for member in dept.members.all() %}
+            {% for sheet in member.goal_sheets if sheet.cycle_id == cycle.id and sheet.is_locked %}
+            {% set has_locked.found = true %}
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">{{ member.name }}</td>
+              <td>{{ dept.name }}</td>
+              <td style="font-variant-numeric:tabular-nums;">{{ sheet.goal_count }}</td>
+              <td>{{ sheet.approver.name if sheet.approver else '—' }}</td>
+              <td style="font-size:12px;color:var(--text-muted);">{{ sheet.approved_at.strftime('%d %b %Y') if sheet.approved_at else '—' }}</td>
+              <td>
+                <form method="POST" action="{{ url_for('admin.unlock', sheet_id=sheet.id) }}" style="display:inline;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-sm btn-outline" onclick="return confirm('Unlock this sheet?')">Unlock</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          {% endfor %}
+        {% endfor %}
+        {% if not has_locked.found %}
+        <tr><td colspan="6" class="empty-state">No locked sheets.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card empty-state">No active cycle. <a href="{{ url_for('admin.cycles') }}">Create one</a>.</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>{% endblock %}

@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — ATOMQUEST{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Dashboard</h1>
+  <p>{{ cycle.name if cycle else 'No active cycle' }}</p>
+</div>
+
+{% if not cycle %}
+<div class="card empty-state">No active performance cycle. Contact your Admin/HR.</div>
+{% elif not sheet %}
+<div class="card">
+  <div class="card-header"><h3 class="card-title">Get Started</h3></div>
+  <p style="color:var(--text-tertiary);margin-bottom:16px;font-size:13px;">You haven't created a goal sheet for this cycle yet.</p>
+  <a href="{{ url_for('employee.goal_form') }}" class="btn btn-primary">Create Goal Sheet</a>
+</div>
+{% else %}
+<div class="grid grid-4 mb-3">
+  <div class="card stat-card">
+    <div class="stat-value">{{ sheet.goals|length }}</div>
+    <div class="stat-label">Goals</div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-value">{{ sheet.total_weightage }}%</div>
+    <div class="stat-label">Weightage</div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-value stat-emerald">{{ scores.overall_score if scores else 0 }}%</div>
+    <div class="stat-label">Score</div>
+  </div>
+  <div class="card stat-card">
+    <span class="badge badge-{{ sheet.status }}">{{ sheet.status|upper }}</span>
+    <div class="stat-label mt-1">Status</div>
+  </div>
+</div>
+
+{% if sheet.status == 'returned' and sheet.return_comment %}
+<div class="alert alert-warning">Returned by manager — {{ sheet.return_comment }}</div>
+{% endif %}
+
+{% if sheet.status in ('draft', 'returned') %}
+<div class="flex gap-1 mb-3">
+  <a href="{{ url_for('employee.goal_form') }}" class="btn btn-outline">Edit Goals</a>
+  <form method="POST" action="{{ url_for('employee.submit_goals', sheet_id=sheet.id) }}" style="display:inline;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-primary">Submit for Approval</button>
+  </form>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Goals</h3>
+    {% if sheet.is_locked %}<span class="badge badge-locked">Locked</span>{% endif %}
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Thrust Area</th><th>Title</th><th>Unit</th>
+          <th>Target</th><th>Weight</th><th>Status</th><th>Score</th>
+          {% if sheet.status == 'approved' %}<th></th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for goal in sheet.goals %}
+        <tr>
+          <td style="color:var(--text-faint);">{{ loop.index }}</td>
+          <td>{{ goal.thrust_area }}</td>
+          <td>
+            <span style="color:var(--text-primary);font-weight:500;">{{ goal.title }}</span>
+            {% if goal.is_shared %}<span class="badge badge-locked" style="font-size:9px;margin-left:4px;">SHARED</span>{% endif %}
+          </td>
+          <td>{{ goal.unit_type|replace('_',' ')|title }}</td>
+          <td style="font-variant-numeric:tabular-nums;">{% if goal.unit_type == 'timeline' %}{{ goal.target_date }}{% elif goal.unit_type == 'zero_based' %}Zero{% else %}{{ goal.target_value }}{% endif %}</td>
+          <td><strong>{{ goal.weightage }}%</strong></td>
+          <td><span class="badge badge-{{ goal.status }}">{{ goal.status|replace('_',' ')|title }}</span></td>
+          <td style="font-variant-numeric:tabular-nums;">
+            {% if scores %}
+              {% for gs in scores.goals if gs.goal_id == goal.id %}{{ gs.raw_score }}%{% endfor %}
+            {% else %}—{% endif %}
+          </td>
+          {% if sheet.status == 'approved' %}
+          <td><a href="{{ url_for('employee.achievement', goal_id=goal.id) }}" class="btn btn-sm btn-outline">Log</a></td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if sheet.status == 'approved' %}
+<div class="card mt-3">
+  <div class="card-header"><h3 class="card-title">Achievement History</h3></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Goal</th><th>Quarter</th><th>Actual</th><th>Score</th><th>Notes</th><th>Date</th></tr></thead>
+      <tbody>
+        {% set has_achievements = namespace(found=false) %}
+        {% for goal in sheet.goals %}
+          {% for ach in goal.achievements %}
+          {% set has_achievements.found = true %}
+          <tr>
+            <td>{{ goal.title }}</td>
+            <td><span class="badge badge-approved">{{ ach.quarter }}</span></td>
+            <td style="font-variant-numeric:tabular-nums;">{{ ach.actual_value if ach.actual_value is not none else '—' }}</td>
+            <td style="font-variant-numeric:tabular-nums;">{{ '%.1f'|format(ach.computed_score) if ach.computed_score else '—' }}%</td>
+            <td style="max-width:180px;font-size:12px;color:var(--text-tertiary);">{{ ach.evidence_notes or '—' }}</td>
+            <td style="color:var(--text-muted);font-size:12px;">{{ ach.logged_at.strftime('%d %b %Y') if ach.logged_at else '—' }}</td>
+          </tr>
+          {% endfor %}
+        {% endfor %}
+        {% if not has_achievements.found %}
+        <tr><td colspan="6" class="empty-state">No achievements logged yet.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Log Achievement — ATOMQUEST{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Log Achievement</h1>
+  <p>{{ goal.title }}</p>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Goal Details</h3>
+    <span class="badge badge-{{ goal.status }}">{{ goal.status|replace('_',' ')|title }}</span>
+  </div>
+  <div class="grid grid-3 mb-3">
+    <div><span class="form-label">Thrust Area</span><p style="font-size:13px;color:var(--text-secondary);">{{ goal.thrust_area }}</p></div>
+    <div><span class="form-label">Target</span><p style="font-size:13px;color:var(--text-secondary);">{% if goal.unit_type == 'timeline' %}{{ goal.target_date }}{% elif goal.unit_type == 'zero_based' %}Zero defects{% else %}{{ goal.target_value }}{% endif %}</p></div>
+    <div><span class="form-label">Weightage</span><p style="font-size:13px;color:var(--text-secondary);">{{ goal.weightage }}%</p></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <form method="POST" action="{{ url_for('employee.achievement', goal_id=goal.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Quarter</label>
+        <select name="quarter" class="form-control">
+          {% for q in ['Q1','Q2','Q3','Q4'] %}
+          <option value="{{ q }}" {{ 'selected' if current_quarter == q }}>{{ q }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select name="status" class="form-control">
+          <option value="not_started" {{ 'selected' if goal.status == 'not_started' }}>Not Started</option>
+          <option value="on_track" {{ 'selected' if goal.status == 'on_track' }}>On Track</option>
+          <option value="completed" {{ 'selected' if goal.status == 'completed' }}>Completed</option>
+        </select>
+      </div>
+    </div>
+    {% if goal.unit_type in ('numeric', 'percentage', 'zero_based') %}
+    <div class="form-group">
+      <label class="form-label">Actual Value</label>
+      <input type="number" name="actual_value" class="form-control" step="any" placeholder="Enter value">
+    </div>
+    {% endif %}
+    {% if goal.unit_type == 'timeline' %}
+    <div class="form-group">
+      <label class="form-label">Completion Date</label>
+      <input type="date" name="completion_date" class="form-control">
+    </div>
+    {% endif %}
+    <div class="form-group">
+      <label class="form-label">Evidence / Notes</label>
+      <textarea name="evidence_notes" class="form-control" placeholder="Describe what was achieved..."></textarea>
+    </div>
+    <div class="flex gap-1">
+      <button type="submit" class="btn btn-primary">Save Achievement</button>
+      <a href="{{ url_for('employee.dashboard') }}" class="btn btn-outline">Cancel</a>
+    </div>
+  </form>
+</div>
+
+{% if goal.achievements %}
+<div class="card mt-3">
+  <div class="card-header"><h3 class="card-title">Previous Entries</h3></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Quarter</th><th>Actual</th><th>Score</th><th>Notes</th><th>Date</th></tr></thead>
+      <tbody>
+        {% for ach in goal.achievements %}
+        <tr>
+          <td><span class="badge badge-approved">{{ ach.quarter }}</span></td>
+          <td style="font-variant-numeric:tabular-nums;">{{ ach.actual_value if ach.actual_value is not none else '—' }}</td>
+          <td style="font-variant-numeric:tabular-nums;">{{ '%.1f'|format(ach.computed_score) if ach.computed_score else '—' }}%</td>
+          <td style="font-size:12px;color:var(--text-tertiary);">{{ ach.evidence_notes or '—' }}</td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ ach.logged_at.strftime('%d %b %Y') if ach.logged_at else '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

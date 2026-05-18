@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Team — ATOMQUEST{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Team Dashboard</h1>
+  <p>{{ cycle.name if cycle else 'No active cycle' }}</p>
+</div>
+
+{% if pending_count > 0 %}
+<div class="alert alert-warning">{{ pending_count }} goal sheet{{ 's' if pending_count > 1 }} pending your approval.</div>
+{% endif %}
+
+<div class="grid grid-3 mb-3">
+  <div class="card stat-card">
+    <div class="stat-value">{{ team_data|length }}</div>
+    <div class="stat-label">Team Members</div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-value stat-amber">{{ pending_count }}</div>
+    <div class="stat-label">Pending</div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-value stat-emerald">{{ team_data|selectattr('sheet')|selectattr('sheet.status','equalto','approved')|list|length }}</div>
+    <div class="stat-label">Approved</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3 class="card-title">Team Members</h3></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Employee</th><th>Department</th><th>Goals</th><th>Status</th><th>Score</th><th></th></tr></thead>
+      <tbody>
+        {% for item in team_data %}
+        <tr>
+          <td>
+            <div class="flex flex-center gap-1">
+              <div class="user-avatar" style="width:28px;height:28px;font-size:11px;">{{ item.user.name[0] }}</div>
+              <div>
+                <div style="font-weight:500;color:var(--text-primary);font-size:13px;">{{ item.user.name }}</div>
+                <div style="font-size:11px;color:var(--text-muted);">{{ item.user.employee_id }}</div>
+              </div>
+            </div>
+          </td>
+          <td>{{ item.user.department.name if item.user.department else '—' }}</td>
+          <td style="font-variant-numeric:tabular-nums;">{{ item.sheet.goal_count if item.sheet else 0 }}</td>
+          <td>
+            {% if item.sheet %}<span class="badge badge-{{ item.sheet.status }}">{{ item.sheet.status|upper }}</span>
+            {% else %}<span class="badge badge-draft">No Sheet</span>{% endif %}
+          </td>
+          <td style="font-variant-numeric:tabular-nums;">{{ item.scores.overall_score if item.scores else '—' }}%</td>
+          <td>
+            <div class="flex gap-1">
+              {% if item.sheet and item.sheet.status == 'submitted' %}
+              <a href="{{ url_for('manager.review', sheet_id=item.sheet.id) }}" class="btn btn-sm btn-primary">Review</a>
+              {% elif item.sheet %}
+              <a href="{{ url_for('manager.review', sheet_id=item.sheet.id) }}" class="btn btn-sm btn-outline">View</a>
+              {% endif %}
+              <a href="{{ url_for('manager.checkin', employee_id=item.user.id) }}" class="btn btn-sm btn-ghost">Check-in</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if cycle %}
+<div class="card mt-3">
+  <div class="card-header"><h3 class="card-title">Department Completion</h3></div>
+  <div class="chart-container"><canvas id="dept-chart"></canvas></div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>{% endblock %}

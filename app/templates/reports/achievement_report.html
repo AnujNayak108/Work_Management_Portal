@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Achievement Report — ATOMQUEST{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="flex flex-between flex-center">
+    <div><h1>Achievement Report</h1><p>{{ cycle.name if cycle else 'No active cycle' }}</p></div>
+    {% if cycle %}
+    <div class="flex gap-1">
+      <a href="{{ url_for('reports.export_report', format='csv') }}" class="btn btn-outline btn-sm">Export CSV</a>
+      <a href="{{ url_for('reports.export_report', format='excel') }}" class="btn btn-primary btn-sm">Export Excel</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if report_data %}
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Employee</th><th>Dept</th><th>Goals</th><th>Status</th><th>Score</th></tr></thead>
+      <tbody>
+        {% for item in report_data %}
+        <tr>
+          <td>
+            <span style="color:var(--text-primary);font-weight:500;">{{ item.employee.name }}</span>
+            <div style="font-size:11px;color:var(--text-muted);">{{ item.employee.employee_id }}</div>
+          </td>
+          <td>{{ item.employee.department.name if item.employee.department else '—' }}</td>
+          <td style="font-variant-numeric:tabular-nums;">{{ item.sheet.goal_count }}</td>
+          <td><span class="badge badge-{{ item.sheet.status }}">{{ item.sheet.status|upper }}</span></td>
+          <td>
+            {% if item.scores %}
+            <span style="font-weight:600;font-variant-numeric:tabular-nums;">{{ item.scores.overall_score }}%</span>
+            <div class="progress mt-1"><div class="progress-bar" style="width:{{ [item.scores.overall_score, 100]|min }}%"></div></div>
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card empty-state">No data available.</div>
+{% endif %}
+{% endblock %}

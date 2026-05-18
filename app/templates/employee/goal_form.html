@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Goal Sheet — ATOMQUEST{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>{% if sheet %}Edit Goal Sheet{% else %}Create Goal Sheet{% endif %}</h1>
+  <p>{{ cycle.name }}</p>
+</div>
+
+<div class="card mb-3">
+  <div class="flex flex-between flex-center">
+    <span style="font-size:13px;font-weight:500;color:var(--text-secondary);">Total Weightage</span>
+    <span style="font-size:11px;color:var(--text-muted);">Min 10% per goal &middot; Max 8 goals &middot; Must equal 100%</span>
+  </div>
+  <div class="weightage-meter">
+    <div class="weightage-bar"><div class="weightage-fill invalid" id="weightage-fill" style="width:0%"></div></div>
+    <span class="weightage-text" id="weightage-text">0%</span>
+  </div>
+</div>
+
+<form method="POST" action="{{ url_for('employee.goal_form') }}" id="goal-form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  
+  <div id="goals-container">
+    {% if sheet and sheet.goals %}
+      {% for goal in sheet.goals %}
+      <div class="goal-row" data-index="{{ loop.index0 }}">
+        <div class="goal-row-header">
+          <span class="goal-number">GOAL {{ loop.index }}</span>
+          <span class="remove-goal" onclick="removeGoal(this)">&times;</span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Thrust Area</label>
+            <input type="text" name="goals-{{ loop.index0 }}-thrust_area" class="form-control" value="{{ goal.thrust_area }}" required {{ 'readonly' if goal.is_shared }}>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Goal Title</label>
+            <input type="text" name="goals-{{ loop.index0 }}-title" class="form-control" value="{{ goal.title }}" required {{ 'readonly' if goal.is_shared }}>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea name="goals-{{ loop.index0 }}-description" class="form-control">{{ goal.description or '' }}</textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Unit of Measurement</label>
+            <select name="goals-{{ loop.index0 }}-unit_type" class="form-control" onchange="toggleTargetFields(this)">
+              <option value="numeric" {{ 'selected' if goal.unit_type == 'numeric' }}>Numeric</option>
+              <option value="percentage" {{ 'selected' if goal.unit_type == 'percentage' }}>Percentage (%)</option>
+              <option value="timeline" {{ 'selected' if goal.unit_type == 'timeline' }}>Timeline</option>
+              <option value="zero_based" {{ 'selected' if goal.unit_type == 'zero_based' }}>Zero-based</option>
+            </select>
+          </div>
+          <div class="form-group target-value-group {{ 'hidden' if goal.unit_type in ('timeline', 'zero_based') }}">
+            <label class="form-label">Target Value</label>
+            <input type="number" name="goals-{{ loop.index0 }}-target_value" class="form-control" value="{{ goal.target_value or '' }}" step="any">
+          </div>
+          <div class="form-group target-date-group {{ '' if goal.unit_type == 'timeline' else 'hidden' }}">
+            <label class="form-label">Target Date</label>
+            <input type="date" name="goals-{{ loop.index0 }}-target_date" class="form-control" value="{{ goal.target_date or '' }}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Weightage (%)</label>
+            <input type="number" name="goals-{{ loop.index0 }}-weightage" class="form-control weightage-input" value="{{ goal.weightage }}" min="10" max="100" required oninput="updateWeightage()">
+          </div>
+        </div>
+        <input type="hidden" name="goals-{{ loop.index0 }}-is_shared" value="{{ 'true' if goal.is_shared else 'false' }}">
+        <input type="hidden" name="goals-{{ loop.index0 }}-shared_goal_id" value="{{ goal.shared_goal_id or '' }}">
+      </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+
+  <div class="flex gap-1 mt-2">
+    <button type="button" id="add-goal-btn" class="btn btn-outline">+ Add Goal</button>
+    {% if shared_goals %}
+    <div style="position:relative;display:inline-block;">
+      <button type="button" class="btn btn-outline" onclick="document.getElementById('shared-dropdown').classList.toggle('hidden')">Link Shared Goal</button>
+      <div id="shared-dropdown" class="hidden" style="position:absolute;top:100%;left:0;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px;min-width:240px;z-index:10;margin-top:4px;box-shadow:var(--shadow-lg);">
+        {% for sg in shared_goals %}
+        <div style="padding:8px 10px;cursor:pointer;border-radius:4px;font-size:13px;color:var(--text-secondary);" 
+             onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
+          <strong style="color:var(--text-primary);">{{ sg.title }}</strong><br>
+          <span style="color:var(--text-muted);font-size:11px;">{{ sg.thrust_area }} &middot; {{ sg.unit_type }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="flex gap-1 mt-3">
+    <button type="submit" class="btn btn-primary btn-lg">Save Goal Sheet</button>
+    <a href="{{ url_for('employee.dashboard') }}" class="btn btn-outline btn-lg">Cancel</a>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/goals.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Org Hierarchy — ATOMQUEST{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Organization Hierarchy</h1>
+  <p>Manage departments and users</p>
+</div>
+
+<div class="grid grid-2 mb-3">
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">Add Department</h3></div>
+    <form method="POST"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="add_department">
+      <div class="form-group"><label class="form-label">Department Name</label><input type="text" name="dept_name" class="form-control" required></div>
+      <button type="submit" class="btn btn-primary btn-sm">Add Department</button>
+    </form>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">Add User</h3></div>
+    <form method="POST"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="add_user">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Employee ID</label><input type="text" name="employee_id" class="form-control" required></div>
+        <div class="form-group"><label class="form-label">Name</label><input type="text" name="name" class="form-control" required></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Email</label><input type="email" name="email" class="form-control" required></div>
+        <div class="form-group"><label class="form-label">Password</label><input type="password" name="password" class="form-control" value="changeme"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Role</label>
+          <select name="role" class="form-control"><option value="employee">Employee</option><option value="manager">Manager</option><option value="admin">Admin</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Department</label>
+          <select name="department_id" class="form-control"><option value="">None</option>{% for d in departments %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}</select>
+        </div>
+        <div class="form-group"><label class="form-label">Manager</label>
+          <select name="manager_id" class="form-control"><option value="">None</option>{% for m in managers %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}</select>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">Add User</button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3 class="card-title">All Users ({{ users|length }})</h3></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Department</th><th>Manager</th><th>Active</th></tr></thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td style="font-size:12px;color:var(--text-muted);font-variant-numeric:tabular-nums;">{{ u.employee_id }}</td>
+          <td style="color:var(--text-primary);font-weight:500;">{{ u.name }}</td>
+          <td style="font-size:12px;">{{ u.email }}</td>
+          <td><span class="badge badge-{{ 'approved' if u.role == 'admin' else ('submitted' if u.role == 'manager' else 'draft') }}">{{ u.role|upper }}</span></td>
+          <td>{{ u.department.name if u.department else '—' }}</td>
+          <td>{{ u.manager.name if u.manager else '—' }}</td>
+          <td style="color:{{ 'var(--status-success)' if u.is_active else 'var(--status-danger)' }};">{{ 'Yes' if u.is_active else 'No' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

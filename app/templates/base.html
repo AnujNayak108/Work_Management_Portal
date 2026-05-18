@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ATOMQUEST Goal Setting & Tracking Portal">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block title %}ATOMQUEST Portal{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  {% if current_user.is_authenticated %}
+  <div class="app-layout">
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo">AQ</div>
+        <div>
+          <h2>ATOMQUEST</h2>
+          <span>Goal Portal</span>
+        </div>
+      </div>
+      <div class="sidebar-nav">
+        {% if current_user.role == 'employee' or current_user.role == 'manager' %}
+        <div class="nav-section">Employee</div>
+        <a href="{{ url_for('employee.dashboard') }}" class="nav-link {% if request.endpoint == 'employee.dashboard' %}active{% endif %}">
+          <i class="icon">/</i> Dashboard
+        </a>
+        <a href="{{ url_for('employee.goal_form') }}" class="nav-link {% if request.endpoint == 'employee.goal_form' %}active{% endif %}">
+          <i class="icon">+</i> Goal Sheet
+        </a>
+        {% endif %}
+
+        {% if current_user.role == 'manager' or current_user.role == 'admin' %}
+        <div class="nav-section">Manager</div>
+        <a href="{{ url_for('manager.dashboard') }}" class="nav-link {% if request.endpoint == 'manager.dashboard' %}active{% endif %}">
+          <i class="icon">#</i> Team
+        </a>
+        {% endif %}
+
+        {% if current_user.role == 'admin' %}
+        <div class="nav-section">Administration</div>
+        <a href="{{ url_for('admin.dashboard') }}" class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
+          <i class="icon">*</i> Overview
+        </a>
+        <a href="{{ url_for('admin.cycles') }}" class="nav-link {% if request.endpoint == 'admin.cycles' %}active{% endif %}">
+          <i class="icon">~</i> Cycles
+        </a>
+        <a href="{{ url_for('admin.org_hierarchy') }}" class="nav-link {% if request.endpoint == 'admin.org_hierarchy' %}active{% endif %}">
+          <i class="icon">&amp;</i> Org Hierarchy
+        </a>
+        <a href="{{ url_for('admin.shared_goal') }}" class="nav-link {% if request.endpoint == 'admin.shared_goal' %}active{% endif %}">
+          <i class="icon">=</i> Shared Goals
+        </a>
+        <a href="{{ url_for('admin.audit_log') }}" class="nav-link {% if request.endpoint == 'admin.audit_log' %}active{% endif %}">
+          <i class="icon">;</i> Audit Log
+        </a>
+        <a href="{{ url_for('admin.escalations') }}" class="nav-link {% if request.endpoint == 'admin.escalations' %}active{% endif %}">
+          <i class="icon">!</i> Escalations
+        </a>
+        {% endif %}
+
+        <div class="nav-section">Reports</div>
+        <a href="{{ url_for('reports.achievement_report') }}" class="nav-link {% if request.endpoint == 'reports.achievement_report' %}active{% endif %}">
+          <i class="icon">^</i> Achievement
+        </a>
+        <a href="{{ url_for('reports.completion_dashboard') }}" class="nav-link {% if request.endpoint == 'reports.completion_dashboard' %}active{% endif %}">
+          <i class="icon">%</i> Completion
+        </a>
+        <a href="{{ url_for('reports.analytics') }}" class="nav-link {% if request.endpoint == 'reports.analytics' %}active{% endif %}">
+          <i class="icon">@</i> Analytics
+        </a>
+      </div>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar">{{ current_user.name[0] }}</div>
+          <div>
+            <div class="user-name">{{ current_user.name }}</div>
+            <div class="user-role">{{ current_user.role }}</div>
+          </div>
+        </div>
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-sm btn-block mt-2">Sign out</a>
+      </div>
+    </nav>
+
+    <main class="main-content">
+      <button id="sidebar-toggle" class="btn btn-outline btn-sm" style="display:none;position:fixed;top:16px;left:16px;z-index:99;">Menu</button>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  {% else %}
+    {% block fullpage %}{% endblock %}
+  {% endif %}
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Cycles — ATOMQUEST{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Performance Cycles</h1>
+  <p>Configure check-in windows</p>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header"><h3 class="card-title">Create Cycle</h3></div>
+  <form method="POST" action="{{ url_for('admin.cycles') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Cycle Name</label><input type="text" name="name" class="form-control" placeholder="FY 2026-27" required></div>
+      <div class="form-group"><label class="form-label">Start Date</label><input type="date" name="start_date" class="form-control" required></div>
+      <div class="form-group"><label class="form-label">End Date</label><input type="date" name="end_date" class="form-control" required></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Goal Setting Start</label><input type="date" name="goal_setting_start" class="form-control" required></div>
+      <div class="form-group"><label class="form-label">Goal Setting End</label><input type="date" name="goal_setting_end" class="form-control" required></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Q1 Start</label><input type="date" name="q1_start" class="form-control" required></div>
+      <div class="form-group"><label class="form-label">Q1 End</label><input type="date" name="q1_end" class="form-control" required></div>
+      <div class="form-group"><label class="form-label">Q2 Start</label><input type="date" name="q2_start" class="form-control" required></div>
+      <div class="form-group"><label class="form-label">Q2 End</label><input type="date" name="q2_end" class="form-control" required></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Q3 Start</label><input type="date" name="q3_start" class="form-control" required></div>
+      <div class="form-group"><label class="form-label">Q3 End</label><input type="date" name="q3_end" class="form-control" required></div>
+      <div class="form-group"><label class="form-label">Q4 Start</label><input type="date" name="q4_start" class="form-control" required></div>
+      <div class="form-group"><label class="form-label">Q4 End</label><input type="date" name="q4_end" class="form-control" required></div>
+    </div>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text-secondary);">
+        <input type="checkbox" name="is_active"> Set as active cycle
+      </label>
+    </div>
+    <button type="submit" class="btn btn-primary">Create Cycle</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3 class="card-title">All Cycles</h3></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Name</th><th>Period</th><th>Goal Setting</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for c in cycles %}
+        <tr>
+          <td style="color:var(--text-primary);font-weight:500;">{{ c.name }}</td>
+          <td style="font-size:12px;">{{ c.start_date }} — {{ c.end_date }}</td>
+          <td style="font-size:11px;color:var(--text-tertiary);">{{ c.goal_setting_start }}<br>{{ c.goal_setting_end }}</td>
+          <td style="font-size:11px;color:var(--text-tertiary);">{{ c.q1_checkin_start }}<br>{{ c.q1_checkin_end }}</td>
+          <td style="font-size:11px;color:var(--text-tertiary);">{{ c.q2_checkin_start }}<br>{{ c.q2_checkin_end }}</td>
+          <td style="font-size:11px;color:var(--text-tertiary);">{{ c.q3_checkin_start }}<br>{{ c.q3_checkin_end }}</td>
+          <td style="font-size:11px;color:var(--text-tertiary);">{{ c.q4_checkin_start }}<br>{{ c.q4_checkin_end }}</td>
+          <td>{% if c.is_active %}<span class="badge badge-approved">Active</span>{% else %}<span class="badge badge-draft">Inactive</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

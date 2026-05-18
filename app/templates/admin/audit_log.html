@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}{% if show_escalations %}Escalations{% else %}Audit Log{% endif %} — ATOMQUEST{% endblock %}
+
+{% block content %}
+{% if show_escalations %}
+<div class="page-header"><h1>Escalations</h1><p>Deadline enforcement</p></div>
+
+{% if escalations_pending %}
+<div class="card mb-3">
+  <div class="card-header"><h3 class="card-title">Pending ({{ escalations_pending|length }})</h3></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Type</th><th>Employee</th><th>Escalated To</th><th>Level</th><th>Due</th><th>Created</th><th></th></tr></thead>
+      <tbody>
+        {% for esc in escalations_pending %}
+        <tr>
+          <td><span class="badge badge-returned">{{ esc.type|replace('_',' ')|title }}</span></td>
+          <td style="color:var(--text-primary);font-weight:500;">{{ esc.target_user.name }}</td>
+          <td>{{ esc.escalated_to.name if esc.escalated_to else '—' }}</td>
+          <td style="font-variant-numeric:tabular-nums;">L{{ esc.level }}</td>
+          <td style="font-size:12px;">{{ esc.due_date }}</td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ esc.created_at.strftime('%d %b %Y') }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('admin.resolve_esc', esc_id=esc.id) }}" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-sm btn-outline">Resolve</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card empty-state">No pending escalations.</div>
+{% endif %}
+
+{% else %}
+<div class="page-header"><h1>Audit Log</h1><p>Post-lock change history</p></div>
+
+<div class="card">
+  <div class="card-header"><h3 class="card-title">Changes</h3></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Entity</th><th>Previous</th><th>New</th><th>IP</th></tr></thead>
+      <tbody>
+        {% if logs.items %}
+        {% for log in logs.items %}
+        <tr>
+          <td style="font-size:11px;color:var(--text-muted);white-space:nowrap;">{{ log.timestamp.strftime('%d %b %Y %H:%M') }}</td>
+          <td style="color:var(--text-primary);font-weight:500;">{{ log.user.name }}</td>
+          <td><span class="badge badge-submitted">{{ log.action|replace('_',' ')|title }}</span></td>
+          <td style="font-size:12px;">{{ log.entity_type }} #{{ log.entity_id }}</td>
+          <td style="max-width:120px;font-size:11px;word-break:break-all;color:var(--text-tertiary);">{{ log.old_value or '—' }}</td>
+          <td style="max-width:120px;font-size:11px;word-break:break-all;color:var(--text-tertiary);">{{ log.new_value or '—' }}</td>
+          <td style="font-size:11px;color:var(--text-muted);">{{ log.ip_address or '—' }}</td>
+        </tr>
+        {% endfor %}
+        {% else %}
+        <tr><td colspan="7" class="empty-state">No audit entries yet.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+  {% if logs.pages > 1 %}
+  <div class="pagination">
+    {% if logs.has_prev %}<a href="?page={{ logs.prev_num }}">Prev</a>{% endif %}
+    {% for p in logs.iter_pages() %}
+      {% if p %}<a href="?page={{ p }}" class="{{ 'active' if p == logs.page }}">{{ p }}</a>
+      {% else %}<span>...</span>{% endif %}
+    {% endfor %}
+    {% if logs.has_next %}<a href="?page={{ logs.next_num }}">Next</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

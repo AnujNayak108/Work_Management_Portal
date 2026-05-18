@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Completion — ATOMQUEST{% endblock %}
+
+{% block content %}
+<div class="page-header"><h1>Completion Dashboard</h1><p>Check-in status by department</p></div>
+
+{% for dept in completion_data %}
+<div class="card mb-3">
+  <div class="card-header"><h3 class="card-title">{{ dept.department }}</h3></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Employee</th><th>Role</th><th>Sheet</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th></tr></thead>
+      <tbody>
+        {% for emp in dept.employees %}
+        <tr>
+          <td style="color:var(--text-primary);font-weight:500;">{{ emp.name }}</td>
+          <td><span class="badge badge-draft">{{ emp.role|upper }}</span></td>
+          <td><span class="badge badge-{{ emp.sheet_status }}">{{ emp.sheet_status|replace('_',' ')|upper }}</span></td>
+          {% for q in ['Q1','Q2','Q3','Q4'] %}
+          <td>
+            {% set qd = emp.quarters[q] %}
+            {% if qd.total > 0 %}
+              {% set pct = (qd.done / qd.total * 100)|int %}
+              <div class="heatmap-cell {{ 'heat-100' if qd.complete else ('heat-75' if pct >= 75 else ('heat-50' if pct >= 50 else ('heat-25' if pct > 0 else 'heat-0'))) }}">
+                {{ qd.done }}/{{ qd.total }}
+              </div>
+            {% else %}
+              <div class="heatmap-cell heat-0">—</div>
+            {% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endfor %}
+
+{% if not completion_data %}
+<div class="card empty-state">No data available.</div>
+{% endif %}
+{% endblock %}
